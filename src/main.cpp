@@ -92,6 +92,11 @@ int main() {
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
 
+          cout<<"px:"<<px<<endl;
+          cout<<"py:"<<py<<endl;
+          cout<<"psi:"<<psi<<endl;
+          cout<<"v:"<<v<<endl;
+
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
