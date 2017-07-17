@@ -86,7 +86,7 @@ public:
 
     // Minimize the turn of vehicle.
     for (size_t t = 0; t < MPC::N - 1; t++) {
-      fg[0] += 1.5e-4*CppAD::pow(vars[v_start + t]*vars[v_start + t]/
+      fg[0] += 1.8e-4*CppAD::pow(vars[v_start + t]*vars[v_start + t]/
                               (CppAD::cos(2*vars[delta_start + t])+1e-6), 2);
       //fg[0] += 1e3*CppAD::pow(vars[delta_start + t ], 2) * (vars[a_start + t ]) ;
     }

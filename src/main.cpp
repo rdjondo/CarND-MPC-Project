@@ -191,11 +191,12 @@ int main() {
           msgJson["steering_angle"] = steer_value/deg2rad(25);
           msgJson["throttle"] = throttle_value;
 
-          if(fabs(solution_x[delta_start + delay_samples*4]/deg2rad(25))>0.08 ||
-              fabs(solution_x[delta_start + delay_samples*5]/deg2rad(25))>0.06){
-            ref_v = 65;
+          if(fabs(solution_x[delta_start + delay_samples*2]/deg2rad(25))>0.1 ||
+            fabs(solution_x[delta_start + delay_samples*4]/deg2rad(25))>0.085 ||
+              fabs(solution_x[delta_start + delay_samples*6]/deg2rad(25))>0.044){
+            ref_v = 60;
           } else{
-            ref_v = 130;
+            ref_v = 110;
           }
           std::cout <<"ref_v:" << ref_v << std::endl;
 
