@@ -1,16 +1,12 @@
-#include "MPC.h"
 #include <cmath>
 #include <cppad/cppad.hpp>
 #include <cppad/ipopt/solve.hpp>
 #include "Eigen-3.3/Eigen/Core"
 
 #include <chrono>
+#include "MPC.h"
 
 using CppAD::AD;
-
-// DONE: Set N and dt
-size_t N = 20 ;
-double dt = 0.05 ;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -26,22 +22,22 @@ const double Lf = 2.67;
 
 // NOTE: feel free to play around with this
 // or do something completely different
-double ref_v = 40;
+double ref_v = 110;
 
 // The solver takes all the state variables and actuator
 // variables in a singular vector. Thus, we should to establish
 // when one variable starts and another ends to make our lifes easier.
 size_t x_start = 0;
-size_t y_start = x_start + N;
-size_t psi_start = y_start + N;
-size_t v_start = psi_start + N;
-size_t cte_start = v_start + N;
-size_t epsi_start = cte_start + N;
+size_t y_start = x_start + MPC::N;
+size_t psi_start = y_start + MPC::N;
+size_t v_start = psi_start + MPC::N;
+size_t cte_start = v_start + MPC::N;
+size_t epsi_start = cte_start + MPC::N;
 
 // Only consider the actuation at time until N-1 because
 // actuating at N will only have an effect falling in the future at N+1.
-size_t delta_start = epsi_start + N;
-size_t a_start = delta_start + N - 1;
+size_t delta_start = epsi_start + MPC::N;
+size_t a_start = delta_start + MPC::N - 1;
 
 class FG_eval {
 private:
@@ -75,23 +71,31 @@ public:
     // Reference State Cost
     // DONE: Define the cost related the reference state and
     // any anything you think may be beneficial.
-    for (size_t t = 0; t < N; t++) {
+    for (size_t t = 0; t < MPC::N; t++) {
       fg[0] += CppAD::pow(vars[cte_start + t], 2);
       fg[0] += CppAD::pow(vars[epsi_start + t], 2);
-      fg[0] += CppAD::pow(vars[v_start + t] - ref_v, 2);
+      fg[0] += 100*CppAD::pow(vars[v_start + t] - ref_v , 2);
 
     }
 
     // Minimize the use of actuators.
-    for (size_t t = 0; t < N - 1; t++) {
+    for (size_t t = 0; t < MPC::N - 1; t++) {
       //fg[0] += CppAD::pow(vars[delta_start + t], 2);
-      //fg[0] += CppAD::pow(vars[a_start + t], 2);
+      fg[0] += CppAD::pow(vars[a_start + t], 2);
     }
 
+    // Minimize the turn of vehicle.
+    for (size_t t = 0; t < MPC::N - 1; t++) {
+      fg[0] += 1.5e-4*CppAD::pow(vars[v_start + t]*vars[v_start + t]/
+                              (CppAD::cos(2*vars[delta_start + t])+1e-6), 2);
+      //fg[0] += 1e3*CppAD::pow(vars[delta_start + t ], 2) * (vars[a_start + t ]) ;
+    }
+
+
     // Minimize the value gap between sequential actuations.
-    fg[0] += CppAD::pow(acc_last_value - vars[a_start], 2);
-    fg[0] += CppAD::pow(delta_last_value - vars[delta_start], 2);
-    for (size_t t = 0; t < N - 2; ++t) {
+    fg[0] += 10*CppAD::pow(acc_last_value - vars[a_start], 2);
+    fg[0] += 100*CppAD::pow(delta_last_value - vars[delta_start], 2);
+    for (size_t t = 0; t < MPC::N - 2; ++t) {
       fg[0] += CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
       fg[0] += CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
     }
@@ -114,7 +118,7 @@ public:
     fg[1 + epsi_start] = vars[epsi_start];
 
     // The rest of the constraints
-    for (size_t t = 1; t < N; ++t) {
+    for (size_t t = 1; t < MPC::N; ++t) {
       // Mapping variables to easy to read names
       AD<double> x1 = vars[x_start + t];
       AD<double> y1 = vars[y_start + t];
@@ -142,10 +146,10 @@ public:
       // these to the solver.
 
       // Setup the rest of the model constraints
-      fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
-      fg[1 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
-      fg[1 + psi_start + t] = psi1 - (psi0 + v0/Lf * delta * dt);
-      fg[1 + v_start + t] = v1 - (v0 + acc * dt);
+      fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * MPC::dt);
+      fg[1 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * MPC::dt);
+      fg[1 + psi_start + t] = psi1 - (psi0 + v0/Lf * delta * MPC::dt);
+      fg[1 + v_start + t] = v1 - (v0 + acc * MPC::dt);
 
       // Calculating costs on the errors
 
@@ -178,8 +182,9 @@ public:
 MPC::MPC() {}
 MPC::~MPC() {}
 
-vector<double> MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs, double acc_last_value, double delta_last_value) {
-  typedef CPPAD_TESTVECTOR(double) Dvector;
+#define Dvector CPPAD_TESTVECTOR(double)
+
+Dvector MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs, double acc_last_value, double delta_last_value) {
 
   double x = x0[0];
   double y = x0[1];
@@ -277,7 +282,7 @@ vector<double> MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs, double acc
   // NOTE: Currently the solver has a maximum time limit of 0.5 seconds.
   // Change this as you see fit.
   options += "Numeric max_cpu_time          0.5\n";
-  options += "Integer max_iter     100\n";
+  options += "Integer max_iter     2000\n";
 
   // place to return solution
   CppAD::ipopt::solve_result<Dvector> solution;
@@ -294,10 +299,7 @@ vector<double> MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs, double acc
   // Cost
   auto cost = solution.obj_value;
   std::cout << "Cost " << cost << std::endl;
-  return {solution.x[x_start + 1],   solution.x[y_start + 1],
-          solution.x[psi_start + 1], solution.x[v_start + 1],
-          solution.x[cte_start + 1], solution.x[epsi_start + 1],
-          solution.x[delta_start],   solution.x[a_start]};
+  return solution.x;
 }
 
 
