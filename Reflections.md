@@ -6,7 +6,7 @@ In this project, I used a MPC controller to control a simulated vehicle's steeri
 ---
 
 # Video of the controller in action
-** TODO **
+https://youtu.be/9K10vUWuE9Q
 
 # The Model
 
