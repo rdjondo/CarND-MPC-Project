@@ -90,8 +90,11 @@ N=20 was chosen to get a solver time that would be fast enough(below 25 ms on my
 The simulator supplies waypoints to the optimiser.
 Those waypoints are a list of (x,y) position in the map coordinates.
 
-In order to simplify the optimization problem, I considered that the vehicle would be assumed to be located at position (0, 0) with a 0.0 rad heading.
+
 I assumed that in most cases the car is pretty much heading in the right direction. In addition we assume that the fitted function is going to be bijective (there is a single x for a single y). This considerations make it possible to fit a small degree polynomial around the waypoints ahead of the car.
+
+We this information to simplify the optimization problem, I considered that the vehicle would be assumed to be located at position (0, 0) with a 0.0 rad heading. For this, I implemented a simple translation of the waypoints using the current position of the car on the map and a rotation using its heading.
+
 
 The polynomial fitting function was provided by udacity and is a port of the Julia language polyfit function. 
 
