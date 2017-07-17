@@ -75,12 +75,10 @@ public:
       fg[0] += CppAD::pow(vars[cte_start + t], 2);
       fg[0] += CppAD::pow(vars[epsi_start + t], 2);
       fg[0] += 100*CppAD::pow(vars[v_start + t] - ref_v , 2);
-
     }
 
     // Minimize the use of actuators.
     for (size_t t = 0; t < MPC::N - 1; t++) {
-      //fg[0] += CppAD::pow(vars[delta_start + t], 2);
       fg[0] += CppAD::pow(vars[a_start + t], 2);
     }
 
@@ -88,7 +86,6 @@ public:
     for (size_t t = 0; t < MPC::N - 1; t++) {
       fg[0] += 1.8e-4*CppAD::pow(vars[v_start + t]*vars[v_start + t]/
                               (CppAD::cos(2*vars[delta_start + t])+1e-6), 2);
-      //fg[0] += 1e3*CppAD::pow(vars[delta_start + t ], 2) * (vars[a_start + t ]) ;
     }
 
 
@@ -99,11 +96,6 @@ public:
       fg[0] += CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
       fg[0] += CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
     }
-
-    //
-    // Setup Constraints
-    //
-    // NOTE: In this section you'll setup the model constraints.
 
     // Initial constraints
     //
@@ -138,14 +130,11 @@ public:
       AD<double> delta = vars[delta_start + t - 1];
       AD<double> acc = vars[a_start + t - 1];
 
-      // Here's `x` to get you started.
       // The idea here is to constraint this value to be 0.
       //
       // NOTE: The use of `AD<double>` and use of `CppAD`!
       // This is also CppAD can compute derivatives and pass
       // these to the solver.
-
-      // Setup the rest of the model constraints
       fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * MPC::dt);
       fg[1 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * MPC::dt);
       fg[1 + psi_start + t] = psi1 - (psi0 + v0/Lf * delta * MPC::dt);
@@ -153,16 +142,17 @@ public:
 
       // Calculating costs on the errors
 
-      // Computing polynomial evaluation on the objective function
+      /* Computing polynomial evaluation on the objective function */
       AD<double> f_y1 = coeffs[0];
       AD<double> x_power = x1;
       for (int deg = 1; deg < coeffs.size(); ++deg) {
         f_y1 += coeffs[deg] * x_power;
         x_power = x_power * x1;
       }
+      /* Use the objective function value to compute the error to center of track */
       fg[1 + cte_start + t] = cte1 - (f_y1  - y1);
 
-      // Computing 1st derivative evaluation on the objective function
+      /* Computing 1st derivative evaluation on the objective function */
       AD<double> Df_y = coeffs[1];
       AD<double> x_power_prime = x1;
       for(int deg=2; deg<coeffs.size(); ++deg){
@@ -170,6 +160,8 @@ public:
         x_power_prime = x_power_prime * x1;
       }
       AD<double> psi_dest = CppAD::atan(Df_y);
+      
+      /* Use the derivative of objective to compute the error to the vehicle heading (yaw) */
       fg[1 + epsi_start + t] = epsi1 - (psi_dest - psi1);
 
     }

@@ -165,8 +165,8 @@ int main() {
 
           double delay_s = 0.100 + ((double)(elapsed.count())*1e-6);
           const size_t delay_samples = (size_t) (delay_s /(MPC::dt));
-          if(delay_samples > MPC::N ){
-            std::cerr<<"The delay is larger than the model predictive horizon"<<std::endl;
+          if(delay_samples > 6*MPC::N ){
+            std::cerr<<"The delay is larger than the model predictive horizon for delay compensation."<<std::endl;
           }
 
 
