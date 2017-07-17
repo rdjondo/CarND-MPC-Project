@@ -99,7 +99,7 @@ The polynomial fitting function was provided by udacity and is a port of the Jul
 
 We know that the incorporated model executes a number N of simulation steps and gathers some information of the future state of the system given an optimal set of imputs. If the optimal future inputs are stable enough or made constant during the latency, then we can use the simulated solution outputs from the MPC controller to predict what a future input should be.
 
-I chose to add in the cost function a cost element that would penalize turns at high speeds : V^2/cos(delta). It turns out this cost has the effect of calculation as a solution a convex trajectory accross the prediction window. This is great because it makes the steering feel very stable.
+I chose to add in the cost function a cost element that would penalize turns at high speeds : V^2/cos(delta). It turns out this cost has the effect of calculating as a solution a convex trajectory accross the prediction window. This is great because it makes the steering feel very stable.
 
 With this I let the MPC run and I simply chose for the actuator input the optimum steering angle delayed by 100 ms (the latency).
 
